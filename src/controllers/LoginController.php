@@ -111,7 +111,8 @@ class LoginController {
           $userId = $userTbl->id;
           $userKey = Utility::generateUserKey($userId);
 
-
+          $userTbl->user_key = $userKey;
+          
           $insertArr = array(
               'user_id' => $userTbl->id,
               'user_key' => $userKey,
@@ -128,6 +129,7 @@ class LoginController {
 
             $data = array();
             $data['user_tbl'] = $loginTbl;
+
             $data['parameter_tbl'] = $parameterTbl;
 
             $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$data));

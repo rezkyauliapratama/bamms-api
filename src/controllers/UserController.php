@@ -134,12 +134,14 @@ request for create function
 	{
 		 DB::beginTransaction();
 	    try {
-	        
+	        $formatted_value = sprintf("%07d", $userTbl->id);
+            $customerAccount = "1".$formatted_value;
+
             $accountTbl = new AccountTbl();
             $accountTbl->type = $paramTbl->parameter_id;
 	        $accountTbl->user_id = $userTbl->id;
 			$accountTbl->balance = 0;
-			$accountTbl->account_number = "121212";
+			$accountTbl->account_number = $customerAccount;
 			$accountTbl->description = "";
 			
 	        $accountTbl->save();
