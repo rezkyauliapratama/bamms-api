@@ -71,75 +71,24 @@ class LoginController {
 
 
 
+    /*    request for signin method
+          {username, password}
+        */
     public function signin(ServerRequestInterface $request, ResponseInterface $response, $args)
     {
-        /*
-          {name, email, token, sign_id}
-        */
+        
         $body = $request->getBody();
         $req = json_decode($body,true);
 
         $name = "";
         $email = "";
-        $token = "";
-        $signId = "";
-        $isRegister = false;
-
-        if (!empty($req['name'])){
-          $name = $req['name'];
-        }
-
-        if (!empty($req['email'])){
-          $email = $req['email'];
-          $isRegister = true;
-
-        }
-
-        if (!empty($req['token'])){
-          $token = $req['token'];
-        }
-
-        if (!empty($req['sign_id'])){
-          $signId = $req['sign_id'];
-        }
-
-        $count = 0;
-        if ($isRegister){
-          $res = UserTbl::where('email',$req['email']);
-          $count = $res->count();
-        }
-
+        
         $correctApiKey = Utility::checkApiKey($request);
 
-        if ($count == 1 && $correctApiKey){
-          $userTbl = $res->first();
-          $userTbl->sign_id = $signId;
-          $result = $this->createLogin($userTbl,$token);
-
-
-        }else if ($count == 0 && $correctApiKey){
-
-            $loginTbl = LoginTbl::where('token',$token)->orderBy('id', 'DESC')->first();
-
-            $userId = 0;
-
-            if (!is_null($loginTbl)){
-              $userId = $loginTbl->user_id;
-            }
-            $userArr = array(
-                'id' => $userId,
-                'name' => $name,
-                'email' => $email,
-                'sign_id' => $signId,
-            );
-
-            $userTbl = $this->storeUser($userArr);
-
-            if (!is_null($userTbl)){
-              $result = $this->createLogin($userTbl,$token);
-            }else{
-              $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry , cannot create new user",$data));
-            }
+        if ($correctApiKey){
+         
+              $result = $this->createLogin($req);
+           
 
         }else{
         	 $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Error",null));
@@ -147,77 +96,58 @@ class LoginController {
 
 
         $response->getBody()->write($result);
-        return $response;
 
     }
 
-    private function createLogin($userTbl,$token){
+    private function createLogin($req){
       //initialize usertbl data
+//!empty($req['name']
+    
+      $userTbl = UserTbl::where('username',$req['username'])->where('password',$req['password'])->get()->first();
+      
 
-      DB::beginTransaction();
-       try {
-          $userTbl->save();
-          DB::commit();
-      } catch (\Exception $e) {
-        DB::rollback();
-        return null;
-      }
-
-      //generate user key
-      $userId = $userTbl->id;
-      $userKey = Utility::generateUserKey($userId);
+      if ($userTbl != null){
+          //generate user key
+          $userId = $userTbl->id;
+          $userKey = Utility::generateUserKey($userId);
 
 
-      $insertArr = array(
-          'user_id' => $userTbl->id,
-          'user_key' => $userKey,
-          'token' => $token
-      );
+          $insertArr = array(
+              'user_id' => $userTbl->id,
+              'user_key' => $userKey,
+              'token' => ""
+          );
 
-      $loginTbl = $this->store($insertArr);
+          $loginTbl = $this->store($insertArr);
 
-      if (!is_null($loginTbl)){
+          if (!is_null($loginTbl)){
 
-        $loginArr = array(
-            'name' => $userTbl->name,
-            'email' => $userTbl->email,
-            'sign_id' => $userTbl->sign_id,
-            'user_id' => $userTbl->id,
-            'user_key' => $loginTbl->user_key,
-            'token' => $loginTbl->token
-        );
+            
+            $parameterTbl = ParameterTbl::get();
+            
 
-        $parameterTbl = ParameterTbl::get();
-        $activityTbl = ActivityTbl::where('user_id',$userTbl->id)->get();
+            $data = array();
+            $data['user_tbl'] = $loginTbl;
+            $data['parameter_tbl'] = $parameterTbl;
 
-        $detail = array();
-
-        foreach ($activityTbl as $value) {
-            $detailTbl = ActivityDetailTbl::where('activity_id',$value->id)->get();
-            $value->details = $detailTbl;
-            array_push($detail, $value);
-        }
-
-        $data = array();
-        $data['user_tbl'] = $loginArr;
-        $data['parameter_tbl'] = $parameterTbl;
-        $data['activity_tbl'] = $detail;
-
-        $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$data));
+            $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$data));
+          }else{
+            $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry , cannot input your login data",null));
+          }
       }else{
-        $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry , cannot input your login data",null));
+        $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry ,username & password did not match",null));
+
       }
+
+     
       return $result;
     }
 
-    public function delete(ServerRequestInterface $request, ResponseInterface $response, $args)
-    {
-        // proceed to deleting a new user
-    }
-
-
-
 }
+
+
+
+
 
 
 ?>
