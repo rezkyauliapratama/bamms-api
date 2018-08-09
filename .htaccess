@@ -1,0 +1,6 @@
+Options +FollowSymLinks
+RewriteEngine On
+RewriteRule ^src.*$ http://localhost/bamms-api/public/ [R=301,L]
+RewriteRule ^vendor.*$ http://localhost/bamms-api/public/ [R=301,L]
+RewriteRule ^bootstrap.*$ http://localhost/bamms-api/public/ [R=301,L]
+RewriteRule ^$ http://localhost/bamms-api/public/ [L]
