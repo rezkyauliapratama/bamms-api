@@ -7,7 +7,7 @@ class TransactionTbl extends Model {
   use SoftDeletes;
   protected $dates = ['deleted_at'];
 
-  public $table = 'activity_detail_tbl';
+  public $table = 'transaction_tbl';
 
   protected $primaryKey  = 'id';
 

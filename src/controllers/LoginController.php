@@ -4,8 +4,8 @@ use app\models\UserRoleTbl;
 use app\models\LoginTbl;
 use app\models\UserTbl;
 use app\models\ParameterTbl;
-use app\models\ActivityTbl;
-use app\models\ActivityDetailTbl;
+use app\models\AccountTbl;
+use app\models\TransactionTbl;
 
 use Illuminate\Database\Capsule\Manager as DB;
 use \Datetime;
@@ -39,33 +39,6 @@ class LoginController {
         DB::rollback();
         return null;
       }
-
-    }
-
-    private function storeUser($arr){
-      DB::beginTransaction();
-       try {
-
-        $userRole = UserRoleTbl::where('code',Utility::USER_ADMIN)->first();
-
-        if (!is_null($userRole)){
-          $userTbl = UserTbl::find($arr['id']);
-          if (is_null($userTbl)){
-            $userTbl = new UserTbl;
-          }
-          $userTbl->role_id = $userRole->id;
-          $userTbl->name = $arr['name'];
-          $userTbl->email = $arr['email'];
-          $userTbl->sign_id = $arr['sign_id'];
-          $userTbl->save();
-          DB::commit();
-          return $userTbl;
-        }
-      } catch (\Exception $e) {
-        DB::rollback();
-        echo $e;
-      }
-      return null;
 
     }
 
@@ -125,12 +98,23 @@ class LoginController {
 
             
             $parameterTbl = ParameterTbl::get();
+            $accountTbl = AccountTbl::where('user_id',$userTbl->id)->get(); 
+
+            $transaction = array();
+    
+            foreach ($accountTbl as $value) {
+                $transactionTbl = TransactionTbl::where('account_id',$value->id)->get();
+                $value->transactions = $transactionTbl;
+                array_push($transaction, $value);
+            }
+
+            
+            $data = array();
+            $data['user_tbl'] = $userTbl;
+            $data['parameter_tbl'] = $parameterTbl;
+            $data['account_tbl'] = $transaction;
             
 
-            $data = array();
-            $data['user_tbl'] = $loginTbl;
-
-            $data['parameter_tbl'] = $parameterTbl;
 
             $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$data));
           }else{

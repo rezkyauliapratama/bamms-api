@@ -32,9 +32,9 @@ class AccountTbl extends Model {
   /**
   * @return \Illuminate\Database\Eloquent\Relations\HasMany
   **/
-  public function details()
+  public function transactions()
   {
-      return $this->hasMany(ActivityDetailTbl::class,'activity_id','id');
+      return $this->hasMany(TransactionTbl::class,'account_id','id');
   }
 
 

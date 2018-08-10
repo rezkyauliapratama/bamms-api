@@ -64,16 +64,16 @@ $container['LoginController'] = function($container) {
 
 };
 
-$container['ActivityController'] = function($container) {
+$container['AccountController'] = function($container) {
 // note the use of the namespace
 // $container is injected to pass it to the class
-    return new app\controllers\ActivityController();
+    return new app\controllers\AccountController();
 
 };
 
-$container['ActivityDetailController'] = function($container) {
+$container['TransactionController'] = function($container) {
 // note the use of the namespace
 // $container is injected to pass it to the class
-    return new app\controllers\ActivityDetailController();
+    return new app\controllers\TransactionController();
 
 };
