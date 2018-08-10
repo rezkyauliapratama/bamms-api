@@ -128,6 +128,8 @@ class TransactionController {
                     }       
                 }
                 $toAccount->balance = $totalAmount;
+                
+                $toAccount->save();
             }
         }
          DB::commit();
