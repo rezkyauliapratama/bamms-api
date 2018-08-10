@@ -110,7 +110,7 @@ class TransactionController {
          $transactionTbl2->account_id = $toAccount->id;
          $transactionTbl2->type = $paramTo->parameter_id;
          $transactionTbl2->date = $req['date'];
-         $transactionTbl2->name = "Received from ".$toAccount->account_number;
+         $transactionTbl2->name = "Received from ".$fromAccount->account_number;
          $transactionTbl2->amount = $req['amount'];
          $transactionTbl2->save();
 
