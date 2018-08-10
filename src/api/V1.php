@@ -8,11 +8,16 @@ $app->group("/v1", function() use($app) {
 
     //account
     $app->get('/accounts', 'AccountController:getAccounts');
+    $app->post('/accountByNumber', 'AccountController:getByAccountNumber');
 
      //transaction
      $app->get('/transactions', 'TransactionController:getAllTransactions');
      $app->post('/transactionsByDate', 'TransactionController:getAllTransactionsByDate');
      $app->post('/cardTransactionsByDate', 'TransactionController:getAccountTransactionsByDate');
+     $app->post('/transaction', 'TransactionController:create');
+     $app->post('/transfer', 'TransactionController:transferToAnotherAccount');
+
+
 
 
 

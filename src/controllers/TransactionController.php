@@ -22,6 +22,167 @@ class TransactionController {
 
     }
 
+    public function transferToAnotherAccount(ServerRequestInterface $request, ResponseInterface $response, $args)
+    {
+        
+        $body = $request->getBody();
+        $req = json_decode($body,true);
+
+        $header = Utility::checkHeader($request);
+
+        if ($header){
+              $transactionTbl = $this->transactionTransfer($req);
+              if ($transactionTbl != null){
+                $accountTbl = AccountTbl::where('id',$transactionTbl->account_id)->get()->first();
+            
+                if ($accountTbl != null){
+                    $totalAmount = 0;
+                   $listTransactions = TransactionTbl::where('account_id',$accountTbl->id)->get();            
+                    foreach ($listTransactions as $value) {
+                        $parameterTbl = ParameterTbl::where('parameter_id',$value->type)->get()->first();
+                        if ($parameterTbl->code == "CREDIT"){
+                            $totalAmount += $value->amount;
+                        }else{
+                            $totalAmount -= $value->amount;
+                        }       
+                    }
+                    $accountTbl->balance = $totalAmount;
+
+                    $this->storeAccount($accountTbl);
+
+                    $transactionTbl->account = $accountTbl;
+                }
+              $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$transactionTbl));
+
+              }else{
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Cannot proses your transfer",null));
+              }
+
+        }else{
+        	 $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Error",null));
+        }
+
+
+        $response->getBody()->write($result);
+
+    }
+
+
+    private function storeAccount($accountTbl){
+        DB::beginTransaction();
+        try {
+
+        
+         $accountTbl->save();
+         DB::commit();
+ 
+         return $accountTbl;
+       } catch (\Exception $e) {
+ 
+         DB::rollback();
+         return null;
+       }
+    }
+
+    private function transactionTransfer($req){
+        $from = $req['from_account'];
+        $to = $req['to_account'];
+        $fromAccount = AccountTbl::where('account_number',$from)->get()->first();
+        $toAccount = AccountTbl::where('account_number',$to)->get()->first();
+        
+        $paramFrom = ParameterTbl::where('code',"DEBIT")->get()->first();
+        $paramTo = ParameterTbl::where('code',"CREDIT")->get()->first();
+
+        DB::beginTransaction();
+        try {
+ 
+         $transactionTbl1  = new TransactionTbl;
+         $transactionTbl1->account_id = $fromAccount->id;
+         $transactionTbl1->type = $paramFrom->parameter_id;
+         $transactionTbl1->date = $req['date'];
+         $transactionTbl1->name = "Transfer to ".$toAccount->account_number;
+         $transactionTbl1->amount = $req['amount'];
+         $transactionTbl1->save();
+
+         $transactionTbl2  = new TransactionTbl;
+         $transactionTbl2->account_id = $toAccount->id;
+         $transactionTbl2->type = $paramTo->parameter_id;
+         $transactionTbl2->date = $req['date'];
+         $transactionTbl2->name = "Received from ".$toAccount->account_number;
+         $transactionTbl2->amount = $req['amount'];
+         $transactionTbl2->save();
+         DB::commit();
+ 
+         return $transactionTbl1;
+       } catch (\Exception $e) {
+        echo $e;
+         DB::rollback();
+         return null;
+       }
+    }
+
+    public function create(ServerRequestInterface $request, ResponseInterface $response, $args)
+    {
+        
+        $body = $request->getBody();
+        $req = json_decode($body,true);
+
+        $header = Utility::checkHeader($request);
+
+        if ($header){
+              $transactionTbl = $this->storeTransaction($req);
+              if ($transactionTbl != null){
+                $accountTbl = AccountTbl::where('id',$req['account_id'])->get()->first();
+            
+                if ($accountTbl != null){
+                    $totalAmount = 0;
+                   $listTransactions = TransactionTbl::where('account_id',$req['account_id'])->get();            
+                    foreach ($listTransactions as $value) {
+                        $parameterTbl = ParameterTbl::where('parameter_id',$value->type)->get()->first();
+                        if ($parameterTbl->code == "CREDIT"){
+                            $totalAmount += $value->amount;
+                        }else{
+                            $totalAmount -= $value->amount;
+                        }       
+                    }
+                    $accountTbl->balance = $totalAmount;
+                    $this->storeAccount($accountTbl);
+
+                    $transactionTbl->account = $accountTbl;
+                }
+              }
+              $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$transactionTbl));
+
+        }else{
+        	 $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Error",null));
+        }
+
+
+        $response->getBody()->write($result);
+
+    }
+
+    private function storeTransaction($req){
+        DB::beginTransaction();
+        try {
+ 
+         $transactionTbl  = new TransactionTbl;
+         $transactionTbl->account_id = $req['account_id'];
+         $transactionTbl->type = $req['type'];
+         $transactionTbl->date = $req['date'];
+         $transactionTbl->name = $req['name'];
+         $transactionTbl->amount = $req['amount'];
+        
+         $transactionTbl->save();
+         DB::commit();
+ 
+         return $transactionTbl;
+       } catch (\Exception $e) {
+ 
+         DB::rollback();
+         return null;
+       }
+    }
     /*    request for signin method
           {username, password}
         */
@@ -37,6 +198,13 @@ class TransactionController {
                 $userKey = $request->getHeaderLine(Utility::HEADER2);
 
               $result = $this->retriveTransaction($req,$userKey,null);
+              if ($result != null){
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$result));
+
+              }else{
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry , cannot proses your data",null));
+
+              }
            
 
         }else{
@@ -76,8 +244,14 @@ class TransactionController {
                         ->where('date', '>=', $req['start_date'])
                         ->where('date', '<=', $req['end_date'])
                         ->get();
-                    
-                    array_push($transaction, $transactionTbl);
+
+                    if (count($transactionTbl) > 0){
+                        foreach ($transactionTbl as $val2) {
+                            $val2->account = $value;
+                            array_push($transaction, $val2);
+                        }
+                       
+                    }
                 }
                 
                 $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$transaction));
@@ -116,7 +290,7 @@ class TransactionController {
             $accountTbl = AccountTbl::where('user_id',$loginTbl->user_id)
                             ->where('user_id',$loginTbl->user_id)
                             ->where('id',$req['id'])
-                            ->get();
+                            ->get()->first();
             
             if ($accountTbl != null){
             
@@ -125,8 +299,14 @@ class TransactionController {
                 ->where('date', '<=', $req['end_date'])
                 ->get();
                     
+                if (count($transactionTbl)>0){
+                    foreach ($transactionTbl as $val2) {
+                        $val2->account = $accountTbl;
                 
-                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$transaction));
+                    }
+                }
+                
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$transactionTbl));
            
             }else{
                 $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry , cannot proses your data",null));

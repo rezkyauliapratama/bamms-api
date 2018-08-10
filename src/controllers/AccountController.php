@@ -48,6 +48,37 @@ class AccountController {
 
     }
 
+    public function getByAccountNumber(ServerRequestInterface $request, ResponseInterface $response, $args)
+    {
+        
+        $body = $request->getBody();
+        $req = json_decode($body,true);
+
+        $header = Utility::checkHeader($request);
+
+        if ($header){
+            $accountTbl = AccountTbl::where('account_number',$req['account_number'])->get()->first();
+            $userTbl = UserTbl::where('id',$accountTbl->user_id)->get()->first();
+            $accountTbl->user = $userTbl;
+            
+            if ($accountTbl != null){
+                
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$accountTbl));
+            }else{
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry , cannot proses your data",null));
+    
+            }
+           
+
+        }else{
+        	 $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Error",null));
+        }
+
+
+        $response->getBody()->write($result);
+
+    }
+
 
     private function retrieveAccounts($req,$userKey){
         $loginTbl = LoginTbl::where('user_key',$userKey)->get()->first();
