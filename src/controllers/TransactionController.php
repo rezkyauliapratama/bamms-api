@@ -84,6 +84,8 @@ class TransactionController {
        }
     }
 
+
+
     private function transactionTransfer($req){
         $from = $req['from_account'];
         $to = $req['to_account'];
@@ -111,6 +113,23 @@ class TransactionController {
          $transactionTbl2->name = "Received from ".$toAccount->account_number;
          $transactionTbl2->amount = $req['amount'];
          $transactionTbl2->save();
+
+         if ($transactionTbl2 != null){
+            
+            if ($toAccount != null){
+                $totalAmount = 0;
+               $listTransactions = TransactionTbl::where('account_id',$toAccount->id)->get();            
+                foreach ($listTransactions as $value) {
+                    $parameterTbl = ParameterTbl::where('parameter_id',$value->type)->get()->first();
+                    if ($parameterTbl->code == "CREDIT"){
+                        $totalAmount += $value->amount;
+                    }else{
+                        $totalAmount -= $value->amount;
+                    }       
+                }
+                $toAccount->balance = $totalAmount;
+            }
+        }
          DB::commit();
  
          return $transactionTbl1;

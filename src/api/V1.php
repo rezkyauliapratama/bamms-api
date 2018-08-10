@@ -9,6 +9,7 @@ $app->group("/v1", function() use($app) {
     //account
     $app->get('/accounts', 'AccountController:getAccounts');
     $app->post('/accountByNumber', 'AccountController:getByAccountNumber');
+    $app->post('/accountsManager', 'AccountController:getListForManager');
 
      //transaction
      $app->get('/transactions', 'TransactionController:getAllTransactions');

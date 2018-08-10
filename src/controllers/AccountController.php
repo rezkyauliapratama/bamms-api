@@ -94,6 +94,42 @@ class AccountController {
         return $result;
     }
   
+    public function getListForManager(ServerRequestInterface $request, ResponseInterface $response, $args)
+    {
+        
+        $body = $request->getBody();
+        $req = json_decode($body,true);
+
+        $header = Utility::checkHeader($request);
+
+        if ($header){
+            $accountTbls = AccountTbl::orderBy('id')->get();;
+          
+           
+
+            foreach ($accountTbls as $value) {
+                $userTbl = UserTbl::where('id',$value->user_id)->get()->first();
+                $value->user = $userTbl;
+             
+            }
+            
+            if ($accountTbls != null){
+                
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_OK,"",$accountTbls));
+            }else{
+                $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Sorry , cannot proses your data",null));
+    
+            }
+           
+
+        }else{
+        	 $result = json_encode(Utility::getResponse(Utility::HTTP_CODE_BAD_REQUEST,"Error",null));
+        }
+
+
+        $response->getBody()->write($result);
+
+    }
 
 }
 

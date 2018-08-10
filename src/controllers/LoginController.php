@@ -85,7 +85,8 @@ class LoginController {
           $userKey = Utility::generateUserKey($userId);
 
           $userTbl->user_key = $userKey;
-          
+          $UserRole = UserRoleTbl::where('id',$userTbl->role_id)->get()->first();
+          $userTbl->role_code = $UserRole->code;
           $insertArr = array(
               'user_id' => $userTbl->id,
               'user_key' => $userKey,
